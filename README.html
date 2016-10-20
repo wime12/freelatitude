@@ -1,0 +1,289 @@
+<h1 id="freebsd-11-on-the-dell-latitude-e7440">FreeBSD 11 on the Dell Latitude E7440</h1>
+<h2 id="installation">Installation</h2>
+<p>The SSD does not support NCQ TRIM. But it supports TRIM. If you do not switch off NCQ during the installation the data written on the disk will be corrupted and the installation will fail. Therefore before booting the kernel at the loader prompt type</p>
+<pre><code>kern.cam.ada.0.quirks=&quot;0x2&quot;</code></pre>
+<p>to switch off NCQ for the SSD. Be careful to do this everytime you boot the installation medium.</p>
+<p>After the installation before rebooting open a shell in the freshly installed system and put the line above into <code>/boot/loader.conf</code>. Otherwise your installed system will be corrupted sooner or later after you boot into it.</p>
+<h2 id="power-saving">Power saving</h2>
+<p>I put</p>
+<pre><code>kern.hz=100</code></pre>
+<p>into <code>/boot/loader.conf</code> but did not investigate its effect.</p>
+<p>Be sure that <code>/boot/device.hints</code> contains</p>
+<pre><code>hint.acpi_throttle.0.disabled=&quot;1&quot;
+hint.p4tcc.0.disabled=&quot;1&quot;</code></pre>
+<p>Add the lines if they are not there.</p>
+<p>For power saving of the graphics card and the sound system and of PCI devices for which there is no driver add</p>
+<pre><code>drm.i915.enable_rc6=7
+hw.snd.latency=7
+hw.pci.do_power_nodriver=3</code></pre>
+<p>to <code>/boot/loader.conf</code>.</p>
+<p>And finally activate <code>powerd</code> in <code>/etc/rc.conf</code>:</p>
+<pre><code>powerd_enable=&quot;YES&quot;
+economy_cx_lowest=&quot;Cmax&quot;
+performance_cx_lowest=&quot;Cmax&quot;</code></pre>
+<p>It is vital that the graphics drivers are <em>not</em> loaded during boot but by adding them to the <code>kld_list</code> in <code>/etc/rc.conf</code>:</p>
+<pre><code>kld_list+=&#39; drm2 i915kms&#39;</code></pre>
+<p>I experienced failures of <code>powerd</code> if I did otherwise; the power consumption when running on battery never dropped below 14 W if the loader loaded the modules. If they were loaded later I get between 9 W and 10 W of power consumption. The maximum battery life is more than five hours.</p>
+<h2 id="network-failover">Network failover</h2>
+<p>Network failover mode is achieved by configuring the <code>lagg</code> interface. The built in wifi card uses the <code>iwm</code> driver. Apparently either the driver or the card does not like if its ethernet address is changed. The connection to the network cannot be established. So the ethernet interface of the network card has to be changed.</p>
+<p>The following lines in <code>/etc/rc.conf</code> produce a working failover configuration of the wifi and the network card.</p>
+<pre><code>ifconfig_em0=&quot;up&quot;
+ifconfig_emo_alias0=&quot;ether xx:xx:xx:xx:xx:xx&quot;
+wlans_iwm0=&quot;wlan0&quot;
+ifconfig_wlan0=&quot;WPA&quot; cloned_interfaces=&quot;lagg0&quot;
+ifconfig_lagg0=&quot;laggproto failover laggport em0 laggport wlan0 DHCP&quot;</code></pre>
+<p><code>xx:xx:xx:xx:xx:xx</code> stands for the ethernet address of the wifi card. It can be found with <code>ifconfig</code>. Comment out the second and the last two lines above and restart the system. <code>ifconfig</code> will show you the ehternet address of <code>wlan0</code>.</p>
+<h2 id="suspendresume">Suspend/Resume</h2>
+<p>Works mostly. If you suspend while the first terminal is active the screen stays black. Just switch to any of the other terminals and back and the screen will light up again.</p>
+<p>Sometimes after resume no keyboard input is possible and the mouse pointer does not react. I think this is a problem with the graphics driver module <code>i915kms</code>. Maybe this will be resolved in future versions.</p>
+<p>Suspend/Resume does not require a reset of the video stack. Therefore set it to <code>0</code> in <code>/boot/loader.conf</code></p>
+<pre><code>hw.acpi.reset_video=&quot;0&quot;</code></pre>
+<p>which is the default anyway.</p>
+<h2 id="blue-keys">Blue keys</h2>
+<p>Some keys with blue symbols are sent by the keyboard and some by ACPI. Therefore I wrote the kernel module <code>acpi_dell_wmi</code> and <code>kbdmxe</code> which is a modified version of <code>kbdmux</code>. Just say <code>make</code> in each of the modules subdirectories and copy the resulting <code>.ko</code> files to <code>/boot/modules/</code>.</p>
+<p>Load the modules in the usual way by adding either</p>
+<pre><code>kbdmxe_load=&quot;YES&quot; acpi_dell_wmi_load=&quot;YES&quot;</code></pre>
+<p>to <code>/boot/loader.conf</code> or by adding the line</p>
+<pre><code>kld_list+=&#39; kbdmxe acpi_dell_wmi&#39;</code></pre>
+<p>to <code>/etc/rc.conf</code>.</p>
+<p><code>kbdmux</code> and <code>kbdmxe</code> do not play well together as they use the same resources. So deactivate <code>kbdmux</code> by putting the following line into <code>/boot/device.hints</code></p>
+<pre><code>hint.kbdmux.0.disabled=&quot;1&quot;</code></pre>
+<p>To activate <code>kbdmxe</code> copy the file <code>kbdmxe</code> from the <code>rc.d</code> directory in this repository to <code>/usr/local/etc/rc.d</code>. And activate the script in <code>/etc/rc.conf</code> with the line</p>
+<pre><code>kbdmxe_enable=&quot;YES&quot;</code></pre>
+<p>To be able to control the LCD brightness we need the functionality of the kernel module <code>acpi_video</code>. Unfortunately it reacts on the brightness keys by itself in a strange way. Apparently it cannot determine the correct table of the display brightnesses. Therefore there is an altered version <code>acpi_video_dell</code> in this repository which you should build and copy to <code>/boot/modules/</code> and load it in the usual way with</p>
+<pre><code>acpi_video_dell_load=&quot;YES&quot;</code></pre>
+<p>in <code>/boot/loader.conf</code> or by adding the module to the list in <code>/etc/rc.conf</code></p>
+<pre><code>kld_list+=&#39; acpi_video_dell&quot;</code></pre>
+<p>An example of how <code>devd</code> can be configure to react on the various notifications delivered by <code>kbdmxe</code> and <code>acpi_dell_wmi</code> is shown in the file <code>dell.conf</code> in the <code>devd</code> directory of this repository. Just copy the file to <code>/usr/local/etc/dev/</code> and also the directory <code>control-tools/</code> to <code>/usr/local/libexec/</code>.</p>
+<p>This example requires <code>intel_backlight</code> to be installed and <code>musicpd</code> to be installed and configured.</p>
+<p>Finally here is the table with the associations of the keys on the keyboard and the notifications delivered to devd:</p>
+<table>
+<thead>
+<tr class="header">
+<th align="left">key</th>
+<th align="left">system</th>
+<th align="left">subsystem</th>
+<th align="left">type</th>
+<th align="left">notify</th>
+<th align="left">intention</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">Fn + &lt;UP&gt;</td>
+<td align="left">ACPI</td>
+<td align="left">DELL</td>
+<td align="left">KEY</td>
+<td align="left">DSPBRUP</td>
+<td align="left">increase brightness of display</td>
+</tr>
+<tr class="even">
+<td align="left">Fn + &lt;DOWN&gt;</td>
+<td align="left">ACPI</td>
+<td align="left">DELL</td>
+<td align="left">KEY</td>
+<td align="left">DSPBRDN</td>
+<td align="left">decrease brightness of display</td>
+</tr>
+<tr class="odd">
+<td align="left">Fn + &lt;RIGHT&gt;</td>
+<td align="left">ACPI</td>
+<td align="left">DELL</td>
+<td align="left">KEY</td>
+<td align="left">KBBLCYC</td>
+<td align="left">cycle keyboard backlight brightness</td>
+</tr>
+<tr class="even">
+<td align="left">Fn + Q</td>
+<td align="left">ACPI</td>
+<td align="left">DELL</td>
+<td align="left">KEY</td>
+<td align="left">FNQ</td>
+<td align="left"></td>
+</tr>
+<tr class="odd">
+<td align="left">Fn + W</td>
+<td align="left">ACPI</td>
+<td align="left">DELL</td>
+<td align="left">KEY</td>
+<td align="left">FNW</td>
+<td align="left"></td>
+</tr>
+<tr class="even">
+<td align="left">Fn + E</td>
+<td align="left">ACPI</td>
+<td align="left">DELL</td>
+<td align="left">KEY</td>
+<td align="left">FNE</td>
+<td align="left"></td>
+</tr>
+<tr class="odd">
+<td align="left">Fn + R</td>
+<td align="left">ACPI</td>
+<td align="left">DELL</td>
+<td align="left">KEY</td>
+<td align="left">FNR</td>
+<td align="left"></td>
+</tr>
+<tr class="even">
+<td align="left">Fn + T</td>
+<td align="left">ACPI</td>
+<td align="left">DELL</td>
+<td align="left">KEY</td>
+<td align="left">FNT</td>
+<td align="left"></td>
+</tr>
+<tr class="odd">
+<td align="left">Fn + A</td>
+<td align="left">ACPI</td>
+<td align="left">DELL</td>
+<td align="left">KEY</td>
+<td align="left">FNA</td>
+<td align="left"></td>
+</tr>
+<tr class="even">
+<td align="left">Fn + S</td>
+<td align="left">ACPI</td>
+<td align="left">DELL</td>
+<td align="left">KEY</td>
+<td align="left">FNS</td>
+<td align="left"></td>
+</tr>
+<tr class="odd">
+<td align="left">Fn + D</td>
+<td align="left">ACPI</td>
+<td align="left">DELL</td>
+<td align="left">KEY</td>
+<td align="left">FND</td>
+<td align="left"></td>
+</tr>
+<tr class="even">
+<td align="left">Fn + F</td>
+<td align="left">ACPI</td>
+<td align="left">DELL</td>
+<td align="left">KEY</td>
+<td align="left">FNF</td>
+<td align="left"></td>
+</tr>
+<tr class="odd">
+<td align="left">Fn + G</td>
+<td align="left">ACPI</td>
+<td align="left">DELL</td>
+<td align="left">KEY</td>
+<td align="left">FNG</td>
+<td align="left"></td>
+</tr>
+<tr class="even">
+<td align="left"></td>
+<td align="left">ACPI</td>
+<td align="left">DELL</td>
+<td align="left">EVENT</td>
+<td align="left">KBBLOFF</td>
+<td align="left">keyboard backlight is off</td>
+</tr>
+<tr class="odd">
+<td align="left"></td>
+<td align="left">ACPI</td>
+<td align="left">DELL</td>
+<td align="left">EVENT</td>
+<td align="left">DBBLLV1</td>
+<td align="left">keyboard backlight at level 1</td>
+</tr>
+<tr class="even">
+<td align="left"></td>
+<td align="left">ACPI</td>
+<td align="left">DELL</td>
+<td align="left">EVENT</td>
+<td align="left">DBBLLV2</td>
+<td align="left">keyboard backlight at level 2</td>
+</tr>
+<tr class="odd">
+<td align="left"></td>
+<td align="left">ACPI</td>
+<td align="left">DELL</td>
+<td align="left">EVENT</td>
+<td align="left">DBBLLV3</td>
+<td align="left">keyboard backlight at level 3</td>
+</tr>
+<tr class="even">
+<td align="left"></td>
+<td align="left">ACPI</td>
+<td align="left">DELL</td>
+<td align="left">EVENT</td>
+<td align="left">DBBLLV4</td>
+<td align="left">keyboard backlight at level 4</td>
+</tr>
+<tr class="odd">
+<td align="left">Fn + &lt;F5&gt;</td>
+<td align="left">KBD</td>
+<td align="left">KBDMXE</td>
+<td align="left">KEY</td>
+<td align="left">TPDTOGL</td>
+<td align="left">switch touchpad on or off</td>
+</tr>
+<tr class="even">
+<td align="left">Fn + &lt;F8&gt;</td>
+<td align="left">KBD</td>
+<td align="left">KBDMXE</td>
+<td align="left">KEY</td>
+<td align="left">DSPSELN</td>
+<td align="left">select next display configuration</td>
+</tr>
+<tr class="odd">
+<td align="left"><WIN> + P</td>
+<td align="left">KBD</td>
+<td align="left">KBDMXE</td>
+<td align="left">KEY</td>
+<td align="left">DSPSELN</td>
+<td align="left">select next display configuration</td>
+</tr>
+<tr class="even">
+<td align="left">Fn + &lt;F10&gt;</td>
+<td align="left">KBD</td>
+<td align="left">KBDMXE</td>
+<td align="left">KEY</td>
+<td align="left">BACK</td>
+<td align="left">select previous track</td>
+</tr>
+<tr class="odd">
+<td align="left">Fn + &lt;F11&gt;</td>
+<td align="left">KBD</td>
+<td align="left">KBDMXE</td>
+<td align="left">KEY</td>
+<td align="left">PLYTOGL</td>
+<td align="left">play or pause the current track</td>
+</tr>
+<tr class="even">
+<td align="left">Fn + &lt;F12&gt;</td>
+<td align="left">KBD</td>
+<td align="left">KBDMXE</td>
+<td align="left">KEY</td>
+<td align="left">FORWARD</td>
+<td align="left">select next track</td>
+</tr>
+<tr class="odd">
+<td align="left">&lt;VOL MUTE&gt;</td>
+<td align="left">KBD</td>
+<td align="left">KBDMXE</td>
+<td align="left">KEY</td>
+<td align="left">VOLMUTE</td>
+<td align="left">mute the volume</td>
+</tr>
+<tr class="even">
+<td align="left">&lt;VOL UP&gt;</td>
+<td align="left">KBD</td>
+<td align="left">KBDMXE</td>
+<td align="left">KEY</td>
+<td align="left">VOLUP</td>
+<td align="left">increase the volume</td>
+</tr>
+<tr class="odd">
+<td align="left">&lt;VOL DOWN&gt;</td>
+<td align="left">KBD</td>
+<td align="left">KBDMXE</td>
+<td align="left">KEY</td>
+<td align="left">VOLDOWN</td>
+<td align="left">decrease the volume</td>
+</tr>
+</tbody>
+</table>

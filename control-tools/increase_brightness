@@ -1,0 +1,12 @@
+#!/bin/sh
+
+current_brightness=$(sysctl -n hw.acpi.video.lcd0.brightness)
+new_brightness=$((current_brightness + 5))
+
+if [ $new_brightness -gt 100 ]; then
+  new_brightness=100
+fi
+
+sysctl hw.acpi.video.lcd0.brightness=$new_brightness > /dev/null
+
+echo "Change display brightness $current_brightness -> $new_brightness"

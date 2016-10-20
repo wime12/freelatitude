@@ -1,0 +1,10 @@
+#!/bin/sh
+
+socket=/var/mpd/socket
+mpc=/usr/local/bin/mpc
+
+if "$mpc" -h "$socket" status | grep playing > /dev/null; then
+    "$mpc" -h "$socket" pause
+else
+    "$mpc" -h "$socket" play
+fi

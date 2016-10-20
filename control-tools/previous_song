@@ -1,0 +1,6 @@
+#!/bin/sh
+
+socket=/var/mpd/socket
+mpc=/usr/local/bin/mpc
+
+"$mpc" -h "$socket" prev

@@ -1,0 +1,9 @@
+#!/bin/sh
+
+/usr/local/bin/intel_backlight > /dev/null
+
+if [ $? -eq 1 ]; then
+    /usr/local/bin/intel_backlight $(sysctl -n hw.acpi.video.lcd0.brightness) > /dev/null
+else
+    /usr/local/bin/intel_backlight 0 > /dev/null
+fi

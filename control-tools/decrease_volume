@@ -1,0 +1,4 @@
+#!/bin/sh
+
+mixer vol -5 > /dev/null
+mixer -s vol > /tmp/mixer_volume_state

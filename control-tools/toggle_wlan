@@ -1,0 +1,7 @@
+#!/bin/sh
+
+if ( ifconfig wlan0 | head -n 1 | grep -q UP ); then
+  ifconfig wlan0 down
+else
+  ifconfig wlan0 up && wpa_supplicant -B -i wlan0 -c /etc/wpa_supplicant.conf
+fi

@@ -1,0 +1,3 @@
+#!/bin/sh
+
+kill -s SIGUSR1 $(cat < /var/run/moused.pid)

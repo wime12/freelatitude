@@ -1,0 +1,21 @@
+#!/bin/sh
+
+current_volume=$(mixer -s vol)
+standard_volume="vol 70:70"
+state_file="/tmp/mixer_volume_state"
+
+if [ "$current_volume" = 'vol 0:0' ]
+then 
+  if [ -s "$state_file" ]
+  then
+    mixer $(cat < "$state_file")
+    touch "$state_file"
+  else
+    mixer $standard_volume
+    echo $standard_volume > "$state_file"
+  fi
+else
+  mixer vol 0:0
+  touch "$state_file"
+fi
+
