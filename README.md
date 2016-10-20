@@ -158,10 +158,10 @@ This example requires `intel_backlight` to be installed and
 Finally here is the table with the associations of the keys on
 the keyboard and the notifications delivered to devd:
 
-key            system  subsystem  type   notify   intention
+key            system  subsystem  type   notify   description
 -------------  ------  ---------  ----   -------  -----------------------------------
-Fn + \<UP>     ACPI    DELL       KEY    DSPBRUP  increase brightness of display
-Fn + \<DOWN>   ACPI    DELL       KEY    DSPBRDN  decrease brightness of display
+Fn + \<UP>     ACPI    DELL       KEY    DSPBRUP  increase brightness of the display
+Fn + \<DOWN>   ACPI    DELL       KEY    DSPBRDN  decrease brightness of the display
 Fn + \<RIGHT>  ACPI    DELL       KEY    KBBLCYC  cycle keyboard backlight brightness
 Fn + Q         ACPI    DELL       KEY    FNQ
 Fn + W         ACPI    DELL       KEY    FNW
@@ -174,13 +174,13 @@ Fn + D         ACPI    DELL       KEY    FND
 Fn + F         ACPI    DELL       KEY    FNF
 Fn + G         ACPI    DELL       KEY    FNG
                ACPI    DELL       EVENT  KBBLOFF  keyboard backlight is off
-               ACPI    DELL       EVENT  DBBLLV1  keyboard backlight at level 1
-               ACPI    DELL       EVENT  DBBLLV2  keyboard backlight at level 2
-               ACPI    DELL       EVENT  DBBLLV3  keyboard backlight at level 3
-               ACPI    DELL       EVENT  DBBLLV4  keyboard backlight at level 4
-Fn + \<F5>     KBD     KBDMXE     KEY    TPDTOGL  switch touchpad on or off
+               ACPI    DELL       EVENT  KBBLLV1  keyboard backlight at level 1
+               ACPI    DELL       EVENT  KBBLLV2  keyboard backlight at level 2
+               ACPI    DELL       EVENT  KBBLLV3  keyboard backlight at level 3
+               ACPI    DELL       EVENT  KBBLLV4  keyboard backlight at level 4
+Fn + \<F5>     KBD     KBDMXE     KEY    TPDTOGL  switch the touchpad on or off
 Fn + \<F8>     KBD     KBDMXE     KEY    DSPSELN  select next display configuration
-<WIN> + P      KBD     KBDMXE     KEY    DSPSELN  select next display configuration
+\<WIN> + P     KBD     KBDMXE     KEY    DSPSELN  select next display configuration
 Fn + \<F10>    KBD     KBDMXE     KEY    BACK     select previous track
 Fn + \<F11>    KBD     KBDMXE     KEY    PLYTOGL  play or pause the current track
 Fn + \<F12>    KBD     KBDMXE     KEY    FORWARD  select next track
@@ -188,3 +188,11 @@ Fn + \<F12>    KBD     KBDMXE     KEY    FORWARD  select next track
 \<VOL UP>      KBD     KBDMXE     KEY    VOLUP    increase the volume
 \<VOL DOWN>    KBD     KBDMXE     KEY    VOLDOWN  decrease the volume
 -------------  ------  ---------  -----  -------  -----------------------------------
+
+Note that there are keys that do not have a description. They
+apparently do not have a predefined meaning. So they are free. I
+use them to blank the screen or switch the wifi off.
+
+Also there are the notifications about the state of the keyboard
+backlight brightness. An implementation of an OSD display might
+use these, for example.
