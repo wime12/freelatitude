@@ -79,7 +79,7 @@ configuration of the wifi and the network card.
 `xx:xx:xx:xx:xx:xx` stands for the ethernet address of the wifi
 card.  It can be found with `ifconfig`. Comment out the second and
 the last two lines above and restart the system. `ifconfig` will
-show you the ehternet address of `wlan0`.
+show you the ethernet address of `wlan0`.
 
 
 ## Suspend/Resume
@@ -106,7 +106,7 @@ which is the default anyway.
 Some keys with blue symbols are sent by the keyboard and some by
 ACPI.  Therefore I wrote the kernel module `acpi_dell_wmi` and
 `kbdmxe` which is a modified version of `kbdmux`. Just say `make`
-in each of the modules subdirectories and copy the resulting `.ko`
+in each directory of the modules and copy the resulting `.ko`
 files to `/boot/modules/`.
 
 Load the modules in the usual way by adding either
@@ -189,8 +189,8 @@ Key              | system | subsystem | type  | notify  | Description
 \<VOL DOWN>      | KBD    | KBDMXE    | KEY   | VOLDOWN | decrease the volume
 
 Note that there are keys that do not have a description. They
-apparently do not have a predefined meaning. So they are free. I
-use them to blank the screen or switch the wifi off.
+apparently do not have a predefined meaning. I use some of them to
+blank the screen or switch the wifi off.
 
 Also there are the notifications about the state of the keyboard
 backlight brightness. An implementation of an OSD display might
