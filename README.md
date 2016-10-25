@@ -20,12 +20,6 @@ after you boot into it.
 
 ## Power saving
 
-I put
-
-    kern.hz=100
-
-into `/boot/loader.conf` but did not investigate its effect.
-
 Be sure that `/boot/device.hints` contains
 
     hint.acpi_throttle.0.disabled="1"
