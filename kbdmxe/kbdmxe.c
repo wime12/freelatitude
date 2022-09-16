@@ -52,11 +52,11 @@
 #include <sys/proc.h>
 #include <sys/queue.h>
 #include <sys/selinfo.h>
+#include <sys/types.h>
 #include <sys/systm.h>
 #include <sys/taskqueue.h>
 #include <sys/uio.h>
 #include <dev/kbd/kbdreg.h>
-
 /* the initial key map, accent map and fkey strings */
 #ifdef KBDMXE_DFLT_KEYMAP
 #define KBD_DFLT_KEYMAP
@@ -136,7 +136,7 @@ struct kbdmxe_kbd
 };
 
 typedef struct kbdmxe_kbd	kbdmxe_kbd_t;
-
+typedef void timeout_t (void *);
 /*
  * kbdmxe state
  */
@@ -369,9 +369,9 @@ static keyboard_switch_t kbdmxesw = {
 	.clear_state =	kbdmxe_clear_state,
 	.get_state =	kbdmxe_get_state,
 	.set_state =	kbdmxe_set_state,
-	.get_fkeystr =	genkbd_get_fkeystr,
+	.get_fkeystr =	kbdd_get_fkeystr,
 	.poll =		kbdmxe_poll,
-	.diag =		genkbd_diag,
+	.diag =		kbdd_diag,
 };
 
 /*

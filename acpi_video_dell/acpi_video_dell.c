@@ -37,7 +37,7 @@ __FBSDID("$FreeBSD: releng/11.0/sys/dev/acpica/acpi_video_dell.c 295939 2016-02-
 #include <sys/power.h>
 #include <sys/queue.h>
 #include <sys/sysctl.h>
-
+#include <sys/eventhandler.h>
 #include <contrib/dev/acpica/include/acpi.h>
 
 #include <dev/acpica/acpivar.h>
