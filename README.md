@@ -7,7 +7,7 @@ not switch off NCQ during the installation the data written on the
 disk will be corrupted and the installation will fail. Therefore
 before booting the kernel at the loader prompt type
 
-	`kern.cam.ada.0.quirks="0x2"`
+	kern.cam.ada.0.quirks="0x2"
 
 to switch off NCQ for the SSD. Be careful to do this everytime you
 boot the installation medium.
@@ -22,30 +22,30 @@ after you boot into it.
 
 Be sure that `/boot/device.hints` contains
 
-    `hint.acpi_throttle.0.disabled="1"`
-    `hint.p4tcc.0.disabled="1"`
+    hint.acpi_throttle.0.disabled="1"
+    hint.p4tcc.0.disabled="1"
 
 Add the lines if they are not there.
 
 For power saving of the graphics card and the sound system and of
 PCI devices for which there is no driver add
 
-    `drm.i915.enable_rc6=7`
-    `hw.snd.latency=7`
-    `hw.pci.do_power_nodriver=3`
+    drm.i915.enable_rc6=7
+    hw.snd.latency=7
+    hw.pci.do_power_nodriver=3
 
 to `/boot/loader.conf`.
 
 And finally activate `powerd` in `/etc/rc.conf`:
 
-    `powerd_enable="YES"`
-    `economy_cx_lowest="Cmax"`
-    `performance_cx_lowest="Cmax"`
+    powerd_enable="YES"
+    economy_cx_lowest="Cmax"
+    performance_cx_lowest="Cmax"
 
 It is vital that the graphics drivers are *not* loaded during boot
 but by adding them to the `kld_list` in `/etc/rc.conf`:
 
-    `kld_list+=' i915kms'`
+    kld_list+=' drm2 i915kms'
 
 I experienced failures of `powerd` if I did otherwise; the power
 consumption when running on battery never dropped below 14 W if the
@@ -64,11 +64,11 @@ interface of the network card has to be changed.
 The following lines in `/etc/rc.conf` produce a working failover
 configuration of the wifi and the network card.
 
-    ```ifconfig_em0="up"
+    ifconfig_em0="up"
     ifconfig_emo_alias0="ether xx:xx:xx:xx:xx:xx"
     wlans_iwm0="wlan0"
     ifconfig_wlan0="WPA" cloned_interfaces="lagg0"
-    ifconfig_lagg0="laggproto failover laggport em0 laggport wlan0 DHCP"`
+    ifconfig_lagg0="laggproto failover laggport em0 laggport wlan0 DHCP"
 
 `xx:xx:xx:xx:xx:xx` stands for the ethernet address of the wifi
 card.  It can be found with `ifconfig`. Comment out the second and
@@ -90,7 +90,7 @@ versions.
 Suspend/Resume does not require a reset of the video stack. Therefore
 set it to `0` in `/boot/loader.conf`
 
-    `hw.acpi.reset_video="0"`
+    hw.acpi.reset_video="0"
 
 which is the default anyway.
 
@@ -105,17 +105,25 @@ files to `/boot/modules/`.
 
 Load the modules in the usual way by adding either
 
-    `acpi_dell_wmi_load="YES"`
+    kbdmxe_load="YES" acpi_dell_wmi_load="YES"
 
 to `/boot/loader.conf` or by adding the line
 
-    `kld_list+=' acpi_dell_wmi'`
+    kld_list+=' kbdmxe acpi_dell_wmi'
 
 to `/etc/rc.conf`.
 
-Leave kbdmxe, don't compile it, with it keyboard doesn't work in X11.
-KBDMXE here is ACPI subsystem in devd; it controls Media buttons(pause, prev, next, Volume Up/Down). 
-Those can work without KBDMXE, just bind it in your DE/WM to corresponding script in control-tools/ directory. 
+`kbdmux` and `kbdmxe` do not play well together as they use the
+same resources. So deactivate `kbdmux` by putting the following
+line into `/boot/device.hints`
+
+    hint.kbdmux.0.disabled="1"
+
+To activate `kbdmxe` copy the file `kbdmxe` from the `rc.d` directory
+in this repository to `/usr/local/etc/rc.d`. And activate the script
+in `/etc/rc.conf` with the line
+
+    kbdmxe_enable="YES"
 
 To be able to control the LCD brightness we need the functionality
 of the kernel module `acpi_video`. Unfortunately it reacts on the
@@ -125,12 +133,12 @@ there is an altered version `acpi_video_dell` in this repository
 which you should build and copy to `/boot/modules/` and load it in
 the usual way with
 
-    `acpi_video_dell_load="YES"`
+    acpi_video_dell_load="YES"
 
 in `/boot/loader.conf` or by adding the module to the list in
 `/etc/rc.conf`
 
-    `kld_list+=' acpi_video_dell"`
+    kld_list+=' acpi_video_dell"
 
 An example of how `devd` can be configure to react on the various
 notifications delivered by `kbdmxe` and `acpi_dell_wmi` is shown
